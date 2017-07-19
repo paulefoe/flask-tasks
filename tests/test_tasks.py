@@ -4,9 +4,10 @@
 import os
 import unittest
 
-from flasktaskr import app, db
-from _config import basedir
-from models import Task, User
+from project import app, db
+from project._config import basedir
+from project.models import Task, User
+
 
 TEST_DB = 'test.db'
 
@@ -86,11 +87,12 @@ class TasksTests(unittest.TestCase):
         self.login('Fletcher', 'python101')
         response = self.app.get('tasks/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Add a new task', response.data)
+        self.assertIn(b'Add a new task:', response.data)
 
     def test_not_logged_in_users_cannot_access_tasks_page(self):
         response = self.app.get('tasks/', follow_redirects=True)
-        self.assertIn(b'You need to  log in first', response.data)
+        self.assertIn(b'You need to login first.', response.data)
+
 
     def test_users_can_add_tasks(self):
         self.create_user('Michael', 'michael@realpython.com', 'python')
@@ -98,7 +100,7 @@ class TasksTests(unittest.TestCase):
         self.app.get('tasks/', follow_redirects=True)
         response = self.create_task()
         self.assertIn(
-            b'New entry was successfully posted', response.data
+            b'New entry was successfully posted. Thanks.', response.data
         )
 
     def test_users_cannot_add_tasks_when_error(self):
@@ -120,7 +122,7 @@ class TasksTests(unittest.TestCase):
         self.app.get('tasks/', follow_redirects=True)
         self.create_task()
         response = self.app.get("complete/1/", follow_redirects=True)
-        self.assertIn(b'The task is complete. Very nice!', response.data)
+        self.assertIn(b'The task is complete. Nice.', response.data)
 
     def test_users_can_delete_tasks(self):
         self.create_user('Michael', 'michael@realpython.com', 'python')
@@ -128,7 +130,7 @@ class TasksTests(unittest.TestCase):
         self.app.get('tasks/', follow_redirects=True)
         self.create_task()
         response = self.app.get("delete/1/", follow_redirects=True)
-        self.assertIn(b'The task was deleted. Why not add a new one ?', response.data)
+        self.assertIn(b'The task was deleted.', response.data)
 
     def test_users_cannot_complete_tasks_that_are_not_created_by_them(self):
         self.create_user('Michael', 'michael@realpython.com', 'python')
@@ -209,6 +211,11 @@ class TasksTests(unittest.TestCase):
         for task in tasks:
             self.assertEqual(task.name, 'Run around in circles')
 
+    def test_task_template_displays_logged_in_user_name(self):
+        self.register('Fletcher', 'fletcher@python.com', 'python101', 'python101')
+        self.login('Fletcher', 'python101')
+        response = self.app.get('tasks/', follow_redirects=True)
+        self.assertIn(b'Fletcher', response.data)
 
 if __name__ == "__main__":
     unittest.main()

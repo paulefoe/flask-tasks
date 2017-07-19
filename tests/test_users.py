@@ -4,9 +4,9 @@
 import os
 import unittest
 
-from flasktaskr import app, db
-from _config import basedir
-from models import User
+from project import app, db, bcrypt
+from project._config import basedir
+from project.models import User
 
 TEST_DB = 'test.db'
 
@@ -51,8 +51,14 @@ class UsersTests(unittest.TestCase):
         return self.app.get('logout/', follow_redirects=True)
 
     def create_user(self, name, email, password):
-        new_user = User(name=name, email=email, password=password)
+        new_user = User(name=name, email=email, password=bcrypt.generate_password_hash(password))
         db.session.add(new_user)
+        db.session.commit()
+
+    def create_admin_user(self, name, password):
+        new_admin = User(name=name, email='powerful@example.com',
+                         password=bcrypt.generate_password_hash(password), role='admin')
+        db.session.add(new_admin)
         db.session.commit()
 
     def create_task(self):
@@ -64,8 +70,9 @@ class UsersTests(unittest.TestCase):
             status='1'
         ), follow_redirects=True)
 
+
     def test_users_can_register(self):
-        new_user = User("michael", "michael@mherman.org", "michaelherman")
+        new_user = User("michael", "michael@mherman.org", bcrypt.generate_password_hash("michaelherman"))
         db.session.add(new_user)
         db.session.commit()
         test = db.session.query(User).all()
@@ -76,21 +83,21 @@ class UsersTests(unittest.TestCase):
     def test_form_is_present_on_login_page(self):
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Please sign in to access your task list', response.data)
+        self.assertIn(b'Please login to access your task list.', response.data)
 
     def test_users_cannot_login_unless_registered(self):
         response = self.login('foo', 'bar')
-        self.assertIn(b'Invalid username or password', response.data)
+        self.assertIn(b'Invalid username or password.', response.data)
 
     def test_users_can_login(self):
         self.register('Michael', 'michael@realpython.com', 'python', 'python')
         response = self.login('Michael', 'python')
-        self.assertIn(b'Welcome', response.data)
+        self.assertIn(b'Welcome!', response.data)
 
     def test_invalid_form_data(self):
         self.register('Michael', 'michael@realpython.com', 'python', 'python')
         response = self.login('alert("alert box!");', 'foo')
-        self.assertIn(b'Invalid username or password', response.data)
+        self.assertIn(b'Invalid username or password.', response.data)
 
     def test_form_is_present_on_register_page(self):
         response = self.app.get('register/')
@@ -101,7 +108,7 @@ class UsersTests(unittest.TestCase):
         self.app.get('register/', follow_redirects=True)
         response = self.register(
             'Michael', 'michael@realpython.com', 'python', 'python')
-        self.assertIn(b'Thanks for registering please log in', response.data)
+        self.assertIn(b'Thanks for registering. Please login.', response.data)
 
     def test_user_registeration_error(self):
         self.app.get('register/', follow_redirects=True)
@@ -111,7 +118,7 @@ class UsersTests(unittest.TestCase):
             'Michael', 'michael@realpython.com', 'python', 'python'
         )
         self.assertIn(
-            b'This name is already taken',
+            b'That username and/or email already exist.',
             response.data
         )
 
@@ -119,17 +126,17 @@ class UsersTests(unittest.TestCase):
         self.register('Fletcher', 'fletcher@realpython.com', 'python101', 'python101')
         self.login('Fletcher', 'python101')
         response = self.logout()
-        self.assertIn(b'Goodbye', response.data)
+        self.assertIn(b'Goodbye!', response.data)
 
     def test_not_logged_in_users_cannot_logout(self):
         response = self.logout()
-        self.assertNotIn(b'Goodbye', response.data)
+        self.assertNotIn(b'Goodbye!', response.data)
 
     def test_duplicate_user_registeration_throws_error(self):
         self.register('Fletcher', 'fletcher@realpython.com', 'python101', 'python101')
         response = self.register('Fletcher', 'fletcher@realpython.com', 'python101', 'python101')
         self.assertIn(
-            b'This name is already taken',
+            b'That username and/or email already exist.',
             response.data
         )
 
@@ -144,7 +151,7 @@ class UsersTests(unittest.TestCase):
         )
         self.assertIn(b'This field is required.', response.data)
 
-    def test_string_representation_of_the_user_object(self):
+    def test_string_reprsentation_of_the_user_object(self):
 
         db.session.add(
             User(
@@ -176,6 +183,45 @@ class UsersTests(unittest.TestCase):
         for user in users:
             self.assertEqual(user.role, 'user')
 
+    def test_users_cannot_see_task_modify_links_for_tasks_not_created_by_them(self):
+        self.register('pidor123', 'pidor123@gmail.com', 'pidor123', 'pidor123')
+        self.login('pidor123', 'pidor123')
+        self.app.get('tasks/', follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.register('pidor1234', 'pidor1234@gmail.com', 'pidor123', 'pidor123')
+        response = self.login('pidor1234', 'pidor123')
+        self.app.get('tasks/', follow_redirects=True)
+        self.assertNotIn(b'Marks as complete', response.data)
+        self.assertNotIn(b'Delete', response.data)
+
+    def test_users_can_see_task_modify_links_for_task_created_by_them(self):
+        self.register('pidor123', 'pidor123@gmail.com', 'pidor123', 'pidor123')
+        self.login('pidor123', 'pidor123')
+        self.app.get('tasks/', follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.register('pidor1234', 'pidor12334@gmail.com', 'pidor123', 'pidor123')
+        self.login('pidor1234', 'pidor123')
+        response = self.create_task()
+        self.app.get('tasks/', follow_redirects=True)
+        self.assertIn(b'complete/2/', response.data)
+        self.assertIn(b'delete/2/', response.data)
+
+    def test_admin_users_can_see_task_modify_links_for_all_tasks(self):
+        self.register('pidor123', 'pidor123@gmail.com', 'pidor123', 'pidor123')
+        self.login('pidor123', 'pidor123')
+        self.app.get('tasks/', follow_redirects=True)
+        self.create_task()
+        self.logout()
+        self.create_admin_user('admin123', 'admin123')
+        self.login('admin123', 'admin123')
+        self.app.get('tasks/', follow_redirects=True)
+        response = self.create_task()
+        self.assertIn(b'complete/1/', response.data)
+        self.assertIn(b'delete/1/', response.data)
+        self.assertIn(b'complete/2/', response.data)
+        self.assertIn(b'delete/2/', response.data)
 
 if __name__ == "__main__":
     unittest.main()

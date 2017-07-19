@@ -1,4 +1,8 @@
-from flasktaskr import db
+# project/models.py
+
+
+from project import db
+
 import datetime
 
 
