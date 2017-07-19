@@ -1,3 +1,4 @@
 
 500 error at 19-07-2017 18:05^57: http://localhost:5000/
 404 error at 19-07-2017 20:21:09: http://localhost/this-route-dos-not-exist
+404 error at 19-07-2017 20:22:36: http://localhost/this-route-dos-not-exist
