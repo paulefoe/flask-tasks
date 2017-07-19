@@ -13,10 +13,12 @@ db = SQLAlchemy(app)
 
 from project.users.views import users_blueprint
 from project.tasks.views import tasks_blueprint
+from project.api.views import api_blueprint
 
 # register our blueprints
 app.register_blueprint(users_blueprint)
 app.register_blueprint(tasks_blueprint)
+app.register_blueprint(api_blueprint)
 
 
 @app.errorhandler(404)
@@ -40,3 +42,5 @@ def internal_error(error):
             current_timestamp = now.strftime("%d-%m-%Y %H:%M^%S")
             f.write("\n500 error at {}: {}".format(current_timestamp, r))
     return render_template('500.html'), 500
+
+
