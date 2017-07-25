@@ -1,9 +1,12 @@
 # project/api/views.py
 
-
+import datetime
 from functools import wraps
 from flask import flash, redirect, jsonify, \
     session, url_for, Blueprint, make_response
+from flask_restful import Resource, Api, reqparse
+from project import app
+api = Api(app)
 
 from project import db
 from project.models import Task
@@ -81,3 +84,4 @@ def task(task_id):
         json_result = {"error": "Element does not exist"}
         code = 404
     return make_response(jsonify(json_result), code)
+
