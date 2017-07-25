@@ -4,9 +4,6 @@ import datetime
 from functools import wraps
 from flask import flash, redirect, jsonify, \
     session, url_for, Blueprint, make_response
-from flask_restful import Resource, Api, reqparse
-from project import app
-api = Api(app)
 
 from project import db
 from project.models import Task
