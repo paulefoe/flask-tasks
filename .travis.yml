@@ -1,12 +1,16 @@
 language:
- - python
-
+- python
 python:
- - "3.6"
- - "2.7"
-
+- '3.6'
+- '2.7'
 install:
- - pip install -r requirements.txt
-
+- pip install -r requirements.txt
 script:
- - nosetests
+- nosetests
+deploy:
+  provider: heroku
+  api_key:
+    secure: U78/1lP8QD/j/NZ/CMo/lXIiqF6gqzbfX24yJ9pn7cJ4TTOS2pu5WmLANSYpFclB/+1Dd5sKeKCiz5rm1nzs0kTprjN7cxso7o+L92muMn5h1I4uHnSxJ/ECevERUvZ9S4rTj/GJiqlOQyaB3uMiWuxlIdW45hDz3WBg+PbQlrWyTcKvrbmWukvYLRD45XZrokZabF3cHt1jexSogYGx8sXZVIc5tA+I7gjXh34aTkY9qt6FZtj64zMGnxneFIZ5fxItOYMhB8b8sNcX0GWMXhlfWALf4zImHuNB6UgZamcj9Hnbq4UT/e6zp8Kut++UCYoL64d6E29Ddb49r1PjJht0k6NbhFfIbacX/PfHvb57/4G5tK8529XOvEEqp5RT/NZ2DrXXQSrorFed0TlSVhqLEKpt6tI4VjixEKbAkZicjwfeOduORoz05OD6MoKWjPFzmGV1piCQJW98kcmnCrXNwOqYPIRRoCjYQRogkF7/iHZVlcM92ZT78oeBs9ogtvfSNSPprfcra/kODG+YE+sYtKLdU9/scjCbE+yhm0iXkMUuyyDdbSEhadMkWXY1oHpWPs7lwlmbdscz83l5AaDxRwYFonP+AaDSjK8S2gLzRMrA43KfG2w6huWgK+XYzAMgEVOPAd/LmyAUodgh/gemuoBFlh96UXX9MZgkdro=
+  app: gentle-woodland-72174
+  on:
+    repo: svalee/flask-tasks
